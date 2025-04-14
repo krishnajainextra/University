@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Faculties - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chalkboard-teacher me-2"></i>Faculties</h2>
+</div>
+
+<!-- Add debugging information -->
+{% if faculties %}
+    <div class="alert alert-info">
+        Found {{ faculties|length }} faculty records.
+    </div>
+{% else %}
+    <div class="alert alert-warning">
+        No faculty records found. Please add faculty members to see them listed here.
+    </div>
+{% endif %}
+
+<div class="row">
+    {% for faculty in faculties %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">{{ faculty.name }}</h5>
+                <!-- Fixed line to handle missing college relationship -->
+                <small>{% if faculty.college_id %}{{ faculty.college.name }}{% else %}No College Assigned{% endif %}</small>
+            </div>
+            <div class="card-body">
+                <p><strong>Designation:</strong> {{ faculty.designation }}</p>
+                <p><strong>Qualification:</strong> {{ faculty.qualification }}</p>
+                <p><strong>Contact Number:</strong> {{ faculty.contact_number }}</p>
+                <p><strong>Address:</strong> {{ faculty.address }}</p>
+                <p><strong>Courses Teaching:</strong> {{ faculty.faculty_courses|length }}</p>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-sm btn-outline-warning" type="button" data-bs-toggle="collapse" data-bs-target="#facultyCourseList{{ faculty.id }}">
+                    <i class="fas fa-list me-1"></i>View Courses
+                </button>
+                <div class="collapse mt-3" id="facultyCourseList{{ faculty.id }}">
+                    <div class="card card-body">
+                        {% if faculty.faculty_courses %}
+                        <ul class="list-group">
+                            {% for faculty_course in faculty.faculty_courses %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ faculty_course.course.title }}
+                                <span class="badge bg-warning text-dark rounded-pill">{{ faculty_course.course.course_number }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">No courses found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

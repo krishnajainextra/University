@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+    <p class="lead">Welcome to the University Database Management System Admin Panel</p>
+    
+    <!-- First row of cards -->
+    <div class="row">
+        <!-- Colleges Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Colleges</h5>
+                    <p class="card-text display-4">{{ colleges_count }}</p>
+                    <a href="{{ url_for('admin.colleges') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Departments Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Departments</h5>
+                    <p class="card-text display-4">{{ departments_count }}</p>
+                    <a href="{{ url_for('admin.departments') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Courses Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Courses</h5>
+                    <p class="card-text display-4">{{ courses_count }}</p>
+                    <a href="{{ url_for('admin.courses') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Second row of cards -->
+    <div class="row">
+        <!-- Faculties Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Faculties</h5>
+                    <p class="card-text display-4">{{ faculties_count }}</p>
+                    <a href="{{ url_for('admin.faculties') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Students Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Students</h5>
+                    <p class="card-text display-4">{{ students_count }}</p>
+                    <a href="{{ url_for('admin.students') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Users Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Users</h5>
+                    <p class="card-text display-4">{{ users_count }}</p>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-light">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts section can go here if you have any -->
+    
+</div>
+{% endblock %}
