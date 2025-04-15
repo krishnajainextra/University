@@ -37,16 +37,14 @@
                         </td>
                         <td>{{ college.departments|length }}</td>
                         <td>
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('admin.edit_college', id=college.id) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ college.id }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            <a href="{{ url_for('admin.edit_college', id=college.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ college.id }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
                             
-                            <!-- Delete Modal -->
+                            <!-- Delete Confirmation Modal -->
                             <div class="modal fade" id="deleteModal{{ college.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ college.id }}" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
@@ -59,7 +57,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <form action="{{ url_for('admin.delete_college', id=college.id) }}" method="POST">
+                                            <form action="{{ url_for('admin.delete_college', id=college.id) }}" method="POST" style="display: inline;">
                                                 <button type="submit" class="btn btn-danger">Delete</button>
                                             </form>
                                         </div>

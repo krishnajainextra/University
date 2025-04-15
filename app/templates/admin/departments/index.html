@@ -34,10 +34,10 @@
                         <td>{{ department.head_of_department }}</td>
                         <td>{{ department.contact_number }}</td>
                         <td>{{ department.courses|length }}</td>
-                        <td>
+z                        <td>
                             <div class="btn-group" role="group">
-                                <a href="#" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i>
+                                <a href="{{ url_for('admin.edit_department', id=department.id) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
                                 </a>
                                 <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ department.id }}">
                                     <i class="fas fa-trash"></i>

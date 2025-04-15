@@ -37,12 +37,30 @@
                             <td>{{ course.credits }}</td>
                             <td>{{ course.department.name }}</td>
                             <td>
-                                <a href="#" class="btn btn-sm btn-primary">
+                                <a href="{{ url_for('admin.edit_course', id=course.id) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="#" class="btn btn-sm btn-danger">
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ course.id }}">
                                     <i class="fas fa-trash"></i>
-                                </a>
+                                </button>
+                                
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal{{ course.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ course.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel{{ course.id }}">Confirm Delete</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Are you sure you want to delete the course "{{ course.title }}"? This action cannot be undone.
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

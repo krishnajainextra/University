@@ -4,82 +4,149 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
-    <p class="lead">Welcome to the University Database Management System Admin Panel</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+    </div>
     
-    <!-- First row of cards -->
     <div class="row">
-        <!-- Colleges Card -->
         <div class="col-md-4 mb-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Colleges</h5>
-                    <p class="card-text display-4">{{ colleges_count }}</p>
-                    <a href="{{ url_for('admin.colleges') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Colleges</h5>
+                            <h2 class="mb-0">{{ stats.colleges }}</h2>
+                        </div>
+                        <i class="fas fa-university fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.colleges') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
         
-        <!-- Departments Card -->
         <div class="col-md-4 mb-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Departments</h5>
-                    <p class="card-text display-4">{{ departments_count }}</p>
-                    <a href="{{ url_for('admin.departments') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Departments</h5>
+                            <h2 class="mb-0">{{ stats.departments }}</h2>
+                        </div>
+                        <i class="fas fa-building fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.departments') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
         
-        <!-- Courses Card -->
         <div class="col-md-4 mb-4">
             <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Courses</h5>
-                    <p class="card-text display-4">{{ courses_count }}</p>
-                    <a href="{{ url_for('admin.courses') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Courses</h5>
+                            <h2 class="mb-0">{{ stats.courses }}</h2>
+                        </div>
+                        <i class="fas fa-book fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.courses') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Second row of cards -->
-    <div class="row">
-        <!-- Faculties Card -->
+        
         <div class="col-md-4 mb-4">
             <div class="card bg-warning text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Faculties</h5>
-                    <p class="card-text display-4">{{ faculties_count }}</p>
-                    <a href="{{ url_for('admin.faculties') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Faculty</h5>
+                            <h2 class="mb-0">{{ stats.faculty }}</h2>
+                        </div>
+                        <i class="fas fa-chalkboard-teacher fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.faculties') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
         
-        <!-- Students Card -->
         <div class="col-md-4 mb-4">
             <div class="card bg-danger text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Students</h5>
-                    <p class="card-text display-4">{{ students_count }}</p>
-                    <a href="{{ url_for('admin.students') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Students</h5>
+                            <h2 class="mb-0">{{ stats.students }}</h2>
+                        </div>
+                        <i class="fas fa-user-graduate fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.students') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
         
-        <!-- Users Card -->
         <div class="col-md-4 mb-4">
             <div class="card bg-secondary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Users</h5>
-                    <p class="card-text display-4">{{ users_count }}</p>
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-light">View Details</a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Users</h5>
+                            <h2 class="mb-0">{{ stats.users }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                    <a href="{{ url_for('admin.users') }}" class="text-white">View Details <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Charts section can go here if you have any -->
-    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_college') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Add College
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_department') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-plus me-2"></i>Add Department
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_course') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-plus me-2"></i>Add Course
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_faculty') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-plus me-2"></i>Add Faculty
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_student') }}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-plus me-2"></i>Add Student
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_progress_report') }}" class="btn btn-outline-dark w-100">
+                                <i class="fas fa-plus me-2"></i>Add Report
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.create_user') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-plus me-2"></i>Add User
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

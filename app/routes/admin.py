@@ -1,341 +1,399 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
-from flask_login import login_required, current_user
-from app.models import db, College, Department, Course, Faculty, Student, ProgressReport, CollegeContact, User
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user  # Add current_user here
 from functools import wraps
-from app.models.course import Course
-from app.models.department import Department
+from app.models import (
+    College, CollegeContact, Department, Course, 
+    Faculty, FacultyCourse, Student, ProgressReport, User, db
+)
+from app.forms import (
+    CollegeForm, CollegeContactForm, DepartmentForm, CourseForm,
+    FacultyForm, FacultyCourseForm, StudentForm, ProgressReportForm, UserForm
+)
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
-# Admin required decorator
+# Decorator for admin-only routes
 def admin_required(f):
     @wraps(f)
+    @login_required
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            flash('You need to be an admin to view this page.', 'danger')
-            return redirect(url_for('auth.login'))
+        # Check if user is admin
+        if not current_user.role == 'admin':
+            flash('You do not have permission to access this page.', 'danger')
+            return redirect(url_for('main.index'))
         return f(*args, **kwargs)
     return decorated_function
 
+# Add a dashboard route
 @admin.route('/')
-@login_required
+@admin.route('/dashboard')
 @admin_required
 def dashboard():
-    colleges_count = College.query.count()
-    departments_count = Department.query.count()
-    courses_count = Course.query.count()
-    faculties_count = Faculty.query.count()
-    students_count = Student.query.count()
-    users_count = db.session.execute(db.select(db.func.count()).select_from(db.text('users'))).scalar()
-    
-    return render_template('admin/dashboard.html', 
-                          colleges_count=colleges_count,
-                          departments_count=departments_count,
-                          courses_count=courses_count,
-                          faculties_count=faculties_count,
-                          students_count=students_count,
-                          users_count=users_count)
-
-@admin.route('/student-progress-data')
-@login_required
-@admin_required
-def student_progress_data():
-    # Get student progress data for chart
-    year_1_count = Student.query.filter_by(year=1).count()
-    year_2_count = Student.query.filter_by(year=2).count()
-    year_3_count = Student.query.filter_by(year=3).count()
-    year_4_count = Student.query.filter_by(year=4).count()
-    
-    data = {
-        'labels': ['Year 1', 'Year 2', 'Year 3', 'Year 4'],
-        'datasets': [{
-            'label': 'Number of Students',
-            'data': [year_1_count, year_2_count, year_3_count, year_4_count],
-            'backgroundColor': [
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)'
-            ],
-            'borderColor': [
-                'rgba(75, 192, 192, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
-            'borderWidth': 1
-        }]
+    # Count of each model for dashboard statistics
+    stats = {
+        'colleges': College.query.count(),
+        'departments': Department.query.count(),
+        'courses': Course.query.count(),
+        'faculty': Faculty.query.count(),
+        'students': Student.query.count(),
+        'reports': ProgressReport.query.count(),
+        'users': User.query.count()
     }
-    
-    return jsonify(data)
+    return render_template('admin/dashboard.html', stats=stats)
 
-@admin.route('/college-departments-data')
-@login_required
-@admin_required
-def college_departments_data():
-    # Get college departments data for chart
-    colleges = College.query.all()
-    
-    labels = [college.name for college in colleges]
-    data = [len(college.departments) for college in colleges]
-    
-    chart_data = {
-        'labels': labels,
-        'datasets': [{
-            'label': 'Number of Departments',
-            'data': data,
-            'backgroundColor': [
-                'rgba(255, 99, 132, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)'
-            ],
-            'borderColor': [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
-            'borderWidth': 1
-        }]
-    }
-    
-    return jsonify(chart_data)
-
-# College routes
+# College CRUD
 @admin.route('/colleges')
-@login_required
 @admin_required
 def colleges():
     colleges = College.query.all()
     return render_template('admin/colleges/index.html', colleges=colleges)
 
 @admin.route('/colleges/create', methods=['GET', 'POST'])
-@login_required
 @admin_required
 def create_college():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        address = request.form.get('address')
-        contact_numbers = request.form.getlist('contact_numbers[]')
-        
-        # Create new college
-        new_college = College(name=name, address=address)
-        db.session.add(new_college)
-        db.session.flush()  # Flush to get the college ID
-        
-        # Add contact numbers
-        for contact_number in contact_numbers:
-            if contact_number:  # Only add non-empty contact numbers
-                new_contact = CollegeContact(college_id=new_college.id, contact_number=contact_number)
-                db.session.add(new_contact)
-        
+    form = CollegeForm()
+    if form.validate_on_submit():
+        college = College(
+            name=form.name.data,
+            address=form.address.data
+        )
+        db.session.add(college)
         db.session.commit()
         flash('College created successfully!', 'success')
         return redirect(url_for('admin.colleges'))
-        
-    return render_template('admin/colleges/create.html')
+    return render_template('admin/colleges/create.html', form=form)
 
-@admin.route('/colleges/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
+@admin.route('/colleges/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
 def edit_college(id):
     college = College.query.get_or_404(id)
+    form = CollegeForm(obj=college)
     
-    if request.method == 'POST':
-        college.name = request.form.get('name')
-        college.address = request.form.get('address')
+    if form.validate_on_submit():
+        # Update college details
+        form.populate_obj(college)
         
-        # Update contact numbers
-        # First, remove all existing contacts
+        # Handle contact numbers
+        contact_numbers = request.form.getlist('contact_numbers')
+        
+        # Delete existing contacts
         for contact in college.contacts:
             db.session.delete(contact)
         
-        # Then add the new ones
-        contact_numbers = request.form.getlist('contact_numbers')
-        for contact_number in contact_numbers:
-            if contact_number:  # Only add non-empty contact numbers
-                new_contact = CollegeContact(college_id=college.id, contact_number=contact_number)
-                db.session.add(new_contact)
+        # Add new contacts
+        for number in contact_numbers:
+            if number.strip():  # Only add non-empty contact numbers
+                contact = CollegeContact(college_id=college.id, contact_number=number.strip())
+                db.session.add(contact)
         
         db.session.commit()
         flash('College updated successfully!', 'success')
         return redirect(url_for('admin.colleges'))
         
-    return render_template('admin/colleges/edit.html', college=college)
+    return render_template('admin/colleges/edit.html', form=form, college=college)
 
-@admin.route('/colleges/<int:id>/delete', methods=['POST'])
-@login_required
+@admin.route('/colleges/delete/<int:id>', methods=['POST'])
 @admin_required
 def delete_college(id):
     college = College.query.get_or_404(id)
-    
-    # Check if college has departments
-    if college.departments:
-        flash('Cannot delete college with departments. Delete departments first.', 'danger')
-        return redirect(url_for('admin.colleges'))
-    
-    # Delete all contacts first
-    for contact in college.contacts:
-        db.session.delete(contact)
-    
-    # Delete the college
     db.session.delete(college)
     db.session.commit()
-    
     flash('College deleted successfully!', 'success')
     return redirect(url_for('admin.colleges'))
 
-# Department routes
+# Department CRUD
 @admin.route('/departments')
-@login_required
 @admin_required
 def departments():
     departments = Department.query.all()
     return render_template('admin/departments/index.html', departments=departments)
 
 @admin.route('/departments/create', methods=['GET', 'POST'])
-@login_required
 @admin_required
 def create_department():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        college_id = request.form.get('college_id')
-        head_of_department = request.form.get('head_of_department')
-        contact_number = request.form.get('contact_number')
-        
-        # Create new department
-        new_department = Department(
-            name=name,
-            college_id=college_id,
-            head_of_department=head_of_department,
-            contact_number=contact_number
+    form = DepartmentForm()
+    form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
+    if form.validate_on_submit():
+        department = Department(
+            name=form.name.data,
+            head_of_department=form.head_of_department.data,
+            contact_number=form.contact_number.data,
+            college_id=form.college_id.data
         )
-        
-        db.session.add(new_department)
+        db.session.add(department)
         db.session.commit()
-        
         flash('Department created successfully!', 'success')
         return redirect(url_for('admin.departments'))
-    
-    colleges = College.query.all()
-    return render_template('admin/departments/create.html', colleges=colleges)
+    return render_template('admin/departments/create.html', form=form)
+
+@admin.route('/departments/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_department(id):
+    department = Department.query.get_or_404(id)
+    form = DepartmentForm(obj=department)
+    form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
+    if form.validate_on_submit():
+        form.populate_obj(department)
+        db.session.commit()
+        flash('Department updated successfully!', 'success')
+        return redirect(url_for('admin.departments'))
+    return render_template('admin/departments/edit.html', form=form, department=department)
+
+@admin.route('/departments/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_department(id):
+    department = Department.query.get_or_404(id)
+    db.session.delete(department)
+    db.session.commit()
+    flash('Department deleted successfully!', 'success')
+    return redirect(url_for('admin.departments'))
+
+# Course CRUD
 @admin.route('/courses')
-@login_required
 @admin_required
 def courses():
     courses = Course.query.all()
     return render_template('admin/courses/index.html', courses=courses)
 
+@admin.route('/courses/create', methods=['GET', 'POST'])
+@admin_required
+def create_course():
+    form = CourseForm()
+    form.department_id.choices = [(d.id, d.name) for d in Department.query.all()]
+    if form.validate_on_submit():
+        course = Course(
+            course_number=form.course_number.data,
+            title=form.title.data,
+            description=form.description.data,
+            credits=form.credits.data,
+            year=form.year.data,
+            department_id=form.department_id.data
+        )
+        db.session.add(course)
+        db.session.commit()
+        flash('Course created successfully!', 'success')
+        return redirect(url_for('admin.courses'))
+    return render_template('admin/courses/create.html', form=form)
+
+@admin.route('/courses/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_course(id):
+    course = Course.query.get_or_404(id)
+    form = CourseForm(obj=course)
+    form.department_id.choices = [(d.id, d.name) for d in Department.query.all()]
+    if form.validate_on_submit():
+        form.populate_obj(course)
+        db.session.commit()
+        flash('Course updated successfully!', 'success')
+        return redirect(url_for('admin.courses'))
+    return render_template('admin/courses/edit.html', form=form, course=course)
+
+@admin.route('/courses/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_course(id):
+    course = Course.query.get_or_404(id)
+    db.session.delete(course)
+    db.session.commit()
+    flash('Course deleted successfully!', 'success')
+    return redirect(url_for('admin.courses'))
+
+# Faculty CRUD
 @admin.route('/faculties')
-@login_required
 @admin_required
 def faculties():
     faculties = Faculty.query.all()
-    return render_template('admin/faculties/index.html', faculties=faculties)
+    # Create an empty form for CSRF protection
+    form = FacultyForm()
+    return render_template('admin/faculties/index.html', faculties=faculties, form=form)
 
+@admin.route('/faculties/create', methods=['GET', 'POST'])
+@admin_required
+def create_faculty():
+    form = FacultyForm()
+    form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
+    if form.validate_on_submit():
+        faculty = Faculty(
+            name=form.name.data,
+            designation=form.designation.data,
+            qualification=form.qualification.data,
+            contact_number=form.contact_number.data,
+            address=form.address.data,
+            college_id=form.college_id.data
+        )
+        db.session.add(faculty)
+        db.session.commit()
+        flash('Faculty created successfully!', 'success')
+        return redirect(url_for('admin.faculties'))
+    return render_template('admin/faculties/create.html', form=form)
+
+@admin.route('/faculties/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_faculty(id):
+    faculty = Faculty.query.get_or_404(id)
+    form = FacultyForm(obj=faculty)
+    form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
+    if form.validate_on_submit():
+        form.populate_obj(faculty)
+        db.session.commit()
+        flash('Faculty updated successfully!', 'success')
+        return redirect(url_for('admin.faculties'))
+    return render_template('admin/faculties/edit.html', form=form, faculty=faculty)
+
+@admin.route('/faculties/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_faculty(id):
+    faculty = Faculty.query.get_or_404(id)
+    db.session.delete(faculty)
+    db.session.commit()
+    flash('Faculty deleted successfully!', 'success')
+    return redirect(url_for('admin.faculties'))
+
+# Student CRUD
 @admin.route('/students')
-@login_required
 @admin_required
 def students():
     students = Student.query.all()
-    return render_template('admin/students/index.html', students=students)
+    # Create an empty form for CSRF protection
+    form = StudentForm()
+    return render_template('admin/students/index.html', students=students, form=form)
 
+@admin.route('/students/create', methods=['GET', 'POST'])
+@admin_required
+def create_student():
+    form = StudentForm()
+    if form.validate_on_submit():
+        student = Student(
+            name=form.name.data,
+            year=form.year.data,
+            contact_number=form.contact_number.data,
+            address=form.address.data
+        )
+        db.session.add(student)
+        db.session.commit()
+        flash('Student created successfully!', 'success')
+        return redirect(url_for('admin.students'))
+    return render_template('admin/students/create.html', form=form)
+
+@admin.route('/students/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_student(id):
+    student = Student.query.get_or_404(id)
+    form = StudentForm(obj=student)
+    if form.validate_on_submit():
+        form.populate_obj(student)
+        db.session.commit()
+        flash('Student updated successfully!', 'success')
+        return redirect(url_for('admin.students'))
+    return render_template('admin/students/edit.html', form=form, student=student)
+
+@admin.route('/students/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_student(id):
+    student = Student.query.get_or_404(id)
+    db.session.delete(student)
+    db.session.commit()
+    flash('Student deleted successfully!', 'success')
+    return redirect(url_for('admin.students'))
+
+# Progress Report CRUD
+@admin.route('/progress-reports')
+@admin_required
+def progress_reports():
+    reports = ProgressReport.query.all()
+    return render_template('admin/progress_reports/index.html', reports=reports)
+
+@admin.route('/progress-reports/create', methods=['GET', 'POST'])
+@admin_required
+def create_progress_report():
+    form = ProgressReportForm()
+    form.student_id.choices = [(s.id, s.name) for s in Student.query.all()]
+    if form.validate_on_submit():
+        report = ProgressReport(
+            student_id=form.student_id.data,
+            year=form.year.data,
+            semester=form.semester.data,
+            gpa=form.gpa.data,
+            remarks=form.remarks.data
+        )
+        db.session.add(report)
+        db.session.commit()
+        flash('Progress Report created successfully!', 'success')
+        return redirect(url_for('admin.progress_reports'))
+    return render_template('admin/progress_reports/create.html', form=form)
+
+@admin.route('/progress-reports/edit/<int:id>', methods=['GET', 'POST'])
+@admin_required
+def edit_progress_report(id):
+    report = ProgressReport.query.get_or_404(id)
+    form = ProgressReportForm(obj=report)
+    form.student_id.choices = [(s.id, s.name) for s in Student.query.all()]
+    if form.validate_on_submit():
+        form.populate_obj(report)
+        db.session.commit()
+        flash('Progress Report updated successfully!', 'success')
+        return redirect(url_for('admin.progress_reports'))
+    return render_template('admin/progress_reports/edit.html', form=form, report=report)
+
+@admin.route('/progress-reports/delete/<int:id>', methods=['POST'])
+@admin_required
+def delete_progress_report(id):
+    report = ProgressReport.query.get_or_404(id)
+    db.session.delete(report)
+    db.session.commit()
+    flash('Progress Report deleted successfully!', 'success')
+    return redirect(url_for('admin.progress_reports'))
+
+# User CRUD
 @admin.route('/users')
-@login_required
 @admin_required
 def users():
     users = User.query.all()
     return render_template('admin/users/index.html', users=users)
 
-@admin.route('/courses/create', methods=['GET', 'POST'])
-@login_required
+@admin.route('/users/create', methods=['GET', 'POST'])
 @admin_required
-def create_course():
-    if request.method == 'POST':
-        course_number = request.form.get('course_number')
-        title = request.form.get('title')
-        credits = request.form.get('credits')
-        year = request.form.get('year')
-        department_id = request.form.get('department_id')
-        description = request.form.get('description', '')
-        
-        # Create new course
-        new_course = Course(
-            course_number=course_number,
-            title=title,
-            description=description,
-            credits=credits,
-            year=year,
-            department_id=department_id
+def create_user():
+    form = UserForm()
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password=form.password.data,  # You should hash this password
+            role=form.role.data
         )
-        
-        db.session.add(new_course)
+        db.session.add(user)
         db.session.commit()
-        
-        flash('Course created successfully!', 'success')
-        return redirect(url_for('admin.courses'))
-    
-    departments = Department.query.all()
-    return render_template('admin/courses/create.html', departments=departments)
+        flash('User created successfully!', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin/users/create.html', form=form)
 
-@admin.route('/faculties/create', methods=['GET', 'POST'])
-@login_required
+@admin.route('/users/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
-def create_faculty():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        designation = request.form.get('designation')
-        qualification = request.form.get('qualification')
-        contact_number = request.form.get('contact_number')
-        address = request.form.get('address')
-        college_id = request.form.get('college_id') or None
-        
-        # Create new faculty with all fields
-        new_faculty = Faculty(
-            name=name,
-            designation=designation,
-            qualification=qualification,
-            contact_number=contact_number,
-            address=address,
-            college_id=college_id
-        )
-        
-        db.session.add(new_faculty)
-        db.session.commit()
-        
-        flash('Faculty member added successfully!', 'success')
-        return redirect(url_for('admin.faculties'))
+def edit_user(id):
+    user = User.query.get_or_404(id)
+    form = UserForm(obj=user)
+    # Don't require password for edit
+    form.password.validators = []
+    form.confirm_password.validators = []
     
-    colleges = College.query.all()
-    return render_template('admin/faculties/create.html', colleges=colleges)
+    # Remove password fields from form
+    delattr(form, 'password')
+    delattr(form, 'confirm_password')
+    
+    if form.validate_on_submit():
+        user.username = form.username.data
+        user.email = form.email.data
+        user.role = form.role.data
+        db.session.commit()
+        flash('User updated successfully!', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin/users/edit.html', form=form, user=user)
 
-@admin.route('/students/create', methods=['GET', 'POST'])
-@login_required
+@admin.route('/users/delete/<int:id>', methods=['POST'])
 @admin_required
-def create_student():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        contact_number = request.form.get('contact_number')
-        year = request.form.get('year')
-        address = request.form.get('address')
-        
-        # Create new student with only valid fields
-        new_student = Student(
-            name=name,
-            contact_number=contact_number,
-            year=year,
-            address=address
-        )
-        
-        db.session.add(new_student)
-        db.session.commit()
-        
-        flash('Student added successfully!', 'success')
-        return redirect(url_for('admin.students'))
-    
-    return render_template('admin/students/create.html')
+def delete_user(id):
+    user = User.query.get_or_404(id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully!', 'success')
+    return redirect(url_for('admin.users'))
