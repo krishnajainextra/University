@@ -114,12 +114,20 @@ class Student(db.Model):
     def __repr__(self):
         return f'<Student {self.name}>'
 
+# Look for the ProgressReport class definition
 class ProgressReport(db.Model):
     __tablename__ = 'progress_reports'
     
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
-    year = db.Column(db.Integer, nullable=False)  # 1, 2, 3, or 4
+    year = db.Column(db.Integer, nullable=False)
+    # Check what the semester field is actually called
+    semester = db.Column(db.Integer, nullable=False)  # It might be just 'semester'
+    gpa = db.Column(db.String(10), nullable=False)
+    remarks = db.Column(db.Text, nullable=True)
+    
+    # Relationships
+    student = db.relationship('Student', backref=db.backref('progress_reports', lazy=True))
     grade = db.Column(db.String(2), nullable=False)  # A, B, C, D, F
     rank = db.Column(db.Integer)
     

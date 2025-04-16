@@ -40,31 +40,12 @@
                                 <a href="{{ url_for('admin.edit_student', id=student.id) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ student.id }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                
-                                <!-- Delete Confirmation Modal -->
-                                <div class="modal fade" id="deleteModal{{ student.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ student.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteModalLabel{{ student.id }}">Confirm Delete</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                Are you sure you want to delete the student "{{ student.name }}"? This action cannot be undone.
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <form action="{{ url_for('admin.delete_student', id=student.id) }}" method="POST">
-                                                    {{ form.csrf_token }}
-                                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- For students -->
+                                <form action="{{ url_for('admin.delete_student', id=student.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this student?');">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}

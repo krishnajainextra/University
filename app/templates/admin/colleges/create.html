@@ -10,14 +10,29 @@
                 <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create College</h4>
             </div>
             <div class="card-body">
+                <!-- Display form errors if any -->
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <h4>Form Errors:</h4>
+                    <ul>
+                        {% for field, errors in form.errors.items() %}
+                        <li>{{ field }}: {{ ', '.join(errors) }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
                 <form method="POST" action="{{ url_for('admin.create_college') }}">
+                    {{ form.hidden_tag() }}
+                    
                     <div class="mb-3">
                         <label for="name" class="form-label">College Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        {{ form.name(class="form-control", id="name") }}
                     </div>
+                    
                     <div class="mb-3">
                         <label for="address" class="form-label">Address</label>
-                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                        {{ form.address(class="form-control", id="address", rows="3") }}
                     </div>
                     
                     <div class="mb-3">
@@ -36,9 +51,7 @@
                         <a href="{{ url_for('admin.colleges') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i>Back
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Save
-                        </button>
+                        {{ form.submit(class="btn btn-primary") }}
                     </div>
                 </form>
             </div>

@@ -27,8 +27,6 @@ class DepartmentForm(FlaskForm):
     contact_number = StringField('Contact Number', validators=[DataRequired(), Length(max=20)])
     college_id = SelectField('College', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Submit')
-    # Add this to your DepartmentForm class if you need a code field
-    code = StringField('Department Code', validators=[DataRequired(), Length(min=2, max=10)])
 
 class CourseForm(FlaskForm):
     course_number = StringField('Course Number', validators=[DataRequired(), Length(max=20)])
@@ -57,6 +55,8 @@ class ProgressReportForm(FlaskForm):
     student_id = SelectField('Student', coerce=int, validators=[DataRequired()])
     year = SelectField('Year', choices=[(1, '1st Year'), (2, '2nd Year'), (3, '3rd Year'), (4, '4th Year')], 
                       coerce=int, validators=[DataRequired()])
+    # You need to update your ProgressReportForm to remove the semester field requirement
+    # or update your model to include the semester field
     semester = SelectField('Semester', choices=[(1, 'Semester 1'), (2, 'Semester 2')], 
                          coerce=int, validators=[DataRequired()])
     gpa = StringField('GPA', validators=[DataRequired()])

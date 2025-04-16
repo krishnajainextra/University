@@ -11,45 +11,56 @@
                     <h4 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>Add New Faculty</h4>
                 </div>
                 <div class="card-body">
+                    <!-- Display form errors if any -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h4>Form Errors:</h4>
+                        <ul>
+                            {% for field, errors in form.errors.items() %}
+                            <li>{{ field }}: {{ ', '.join(errors) }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
                     <form method="POST" action="{{ url_for('admin.create_faculty') }}">
+                        {{ form.hidden_tag() }}
+                        
                         <div class="mb-3">
                             <label for="name" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            {{ form.name(class="form-control", id="name") }}
                         </div>
                         
                         <div class="mb-3">
                             <label for="designation" class="form-label">Designation</label>
-                            <input type="text" class="form-control" id="designation" name="designation" required>
+                            {{ form.designation(class="form-control", id="designation") }}
                         </div>
                         
                         <div class="mb-3">
                             <label for="qualification" class="form-label">Qualification</label>
-                            <input type="text" class="form-control" id="qualification" name="qualification">
+                            {{ form.qualification(class="form-control", id="qualification") }}
                         </div>
                         
                         <div class="mb-3">
                             <label for="contact_number" class="form-label">Contact Number</label>
-                            <input type="text" class="form-control" id="contact_number" name="contact_number" required>
+                            {{ form.contact_number(class="form-control", id="contact_number") }}
                         </div>
                         
                         <div class="mb-3">
                             <label for="address" class="form-label">Address</label>
-                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                            {{ form.address(class="form-control", id="address", rows="3") }}
                         </div>
                         
                         <div class="mb-3">
                             <label for="college_id" class="form-label">College</label>
-                            <select class="form-select" id="college_id" name="college_id">
-                                <option value="" selected disabled>Select College</option>
-                                {% for college in colleges %}
-                                <option value="{{ college.id }}">{{ college.name }}</option>
-                                {% endfor %}
-                            </select>
+                            {{ form.college_id(class="form-select", id="college_id") }}
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('admin.faculties') }}" class="btn btn-secondary me-md-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Add Faculty</button>
+                            <a href="{{ url_for('admin.faculties') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>
                 </div>

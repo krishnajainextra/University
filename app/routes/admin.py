@@ -52,15 +52,32 @@ def colleges():
 @admin_required
 def create_college():
     form = CollegeForm()
-    if form.validate_on_submit():
-        college = College(
-            name=form.name.data,
-            address=form.address.data
-        )
-        db.session.add(college)
-        db.session.commit()
-        flash('College created successfully!', 'success')
-        return redirect(url_for('admin.colleges'))
+    if request.method == 'POST':
+        print("College form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("College form validated successfully!")
+            college = College(
+                name=form.name.data,
+                address=form.address.data
+            )
+            db.session.add(college)
+            db.session.commit()
+            
+            # Handle contact numbers
+            contact_numbers = request.form.getlist('contact_numbers[]')
+            for number in contact_numbers:
+                if number.strip():  # Only add non-empty contact numbers
+                    contact = CollegeContact(college_id=college.id, contact_number=number.strip())
+                    db.session.add(contact)
+            
+            db.session.commit()
+            flash('College created successfully!', 'success')
+            return redirect(url_for('admin.colleges'))
+        else:
+            print(f"College form validation errors: {form.errors}")
+    
     return render_template('admin/colleges/create.html', form=form)
 
 @admin.route('/colleges/edit/<int:id>', methods=['GET', 'POST'])
@@ -89,16 +106,28 @@ def edit_college(id):
         db.session.commit()
         flash('College updated successfully!', 'success')
         return redirect(url_for('admin.colleges'))
-        
-    return render_template('admin/colleges/edit.html', form=form, college=college)
 
 @admin.route('/colleges/delete/<int:id>', methods=['POST'])
 @admin_required
 def delete_college(id):
     college = College.query.get_or_404(id)
+    
+    # Check if there are any departments associated with this college
+    departments = Department.query.filter_by(college_id=id).all()
+    if departments:
+        flash('Cannot delete college because it has associated departments. Delete the departments first.', 'danger')
+        return redirect(url_for('admin.colleges'))
+    
+    # If no departments, proceed with deletion
     db.session.delete(college)
-    db.session.commit()
-    flash('College deleted successfully!', 'success')
+    
+    try:
+        db.session.commit()
+        flash('College deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting college: {str(e)}', 'danger')
+    
     return redirect(url_for('admin.colleges'))
 
 # Department CRUD
@@ -112,18 +141,28 @@ def departments():
 @admin_required
 def create_department():
     form = DepartmentForm()
+    # Set the choices for the college_id field
     form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
-    if form.validate_on_submit():
-        department = Department(
-            name=form.name.data,
-            head_of_department=form.head_of_department.data,
-            contact_number=form.contact_number.data,
-            college_id=form.college_id.data
-        )
-        db.session.add(department)
-        db.session.commit()
-        flash('Department created successfully!', 'success')
-        return redirect(url_for('admin.departments'))
+    
+    if request.method == 'POST':
+        print("Form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("Form validated successfully!")
+            department = Department(
+                name=form.name.data,
+                head_of_department=form.head_of_department.data,
+                contact_number=form.contact_number.data,
+                college_id=form.college_id.data
+            )
+            db.session.add(department)
+            db.session.commit()
+            flash('Department created successfully!', 'success')
+            return redirect(url_for('admin.departments'))
+        else:
+            print(f"Form validation errors: {form.errors}")
+    
     return render_template('admin/departments/create.html', form=form)
 
 @admin.route('/departments/edit/<int:id>', methods=['GET', 'POST'])
@@ -143,9 +182,28 @@ def edit_department(id):
 @admin_required
 def delete_department(id):
     department = Department.query.get_or_404(id)
+    
+    # Check if there are any courses associated with this department
+    courses = Course.query.filter_by(department_id=id).all()
+    if courses:
+        # Option 1: Prevent deletion
+        flash('Cannot delete department because it has associated courses. Delete the courses first.', 'danger')
+        return redirect(url_for('admin.departments'))
+        
+        # Option 2 (alternative): Delete all associated courses
+        # for course in courses:
+        #     db.session.delete(course)
+    
+    # If no courses, proceed with deletion
     db.session.delete(department)
-    db.session.commit()
-    flash('Department deleted successfully!', 'success')
+    
+    try:
+        db.session.commit()
+        flash('Department deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting department: {str(e)}', 'danger')
+    
     return redirect(url_for('admin.departments'))
 
 # Course CRUD
@@ -159,21 +217,37 @@ def courses():
 @admin_required
 def create_course():
     form = CourseForm()
-    form.department_id.choices = [(d.id, d.name) for d in Department.query.all()]
-    if form.validate_on_submit():
-        course = Course(
-            course_number=form.course_number.data,
-            title=form.title.data,
-            description=form.description.data,
-            credits=form.credits.data,
-            year=form.year.data,
-            department_id=form.department_id.data
-        )
-        db.session.add(course)
-        db.session.commit()
-        flash('Course created successfully!', 'success')
-        return redirect(url_for('admin.courses'))
-    return render_template('admin/courses/create.html', form=form)
+    departments = Department.query.all()
+    
+    # Check if there are any departments
+    if not departments:
+        flash('Please create at least one department before adding courses.', 'warning')
+        return redirect(url_for('admin.departments'))
+        
+    form.department_id.choices = [(d.id, d.name) for d in departments]
+    
+    if request.method == 'POST':
+        print("Course form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("Course form validated successfully!")
+            course = Course(
+                course_number=form.course_number.data,
+                title=form.title.data,
+                description=form.description.data,
+                credits=form.credits.data,
+                year=form.year.data,
+                department_id=form.department_id.data
+            )
+            db.session.add(course)
+            db.session.commit()
+            flash('Course created successfully!', 'success')
+            return redirect(url_for('admin.courses'))
+        else:
+            print(f"Course form validation errors: {form.errors}")
+    
+    return render_template('admin/courses/create.html', form=form, departments=departments)
 
 @admin.route('/courses/edit/<int:id>', methods=['GET', 'POST'])
 @admin_required
@@ -210,20 +284,36 @@ def faculties():
 @admin_required
 def create_faculty():
     form = FacultyForm()
-    form.college_id.choices = [(c.id, c.name) for c in College.query.all()]
-    if form.validate_on_submit():
-        faculty = Faculty(
-            name=form.name.data,
-            designation=form.designation.data,
-            qualification=form.qualification.data,
-            contact_number=form.contact_number.data,
-            address=form.address.data,
-            college_id=form.college_id.data
-        )
-        db.session.add(faculty)
-        db.session.commit()
-        flash('Faculty created successfully!', 'success')
-        return redirect(url_for('admin.faculties'))
+    colleges = College.query.all()
+    
+    # Check if there are any colleges
+    if not colleges:
+        flash('Please create at least one college before adding faculty.', 'warning')
+        return redirect(url_for('admin.colleges'))
+        
+    form.college_id.choices = [(c.id, c.name) for c in colleges]
+    
+    if request.method == 'POST':
+        print("Faculty form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("Faculty form validated successfully!")
+            faculty = Faculty(
+                name=form.name.data,
+                designation=form.designation.data,
+                qualification=form.qualification.data,
+                contact_number=form.contact_number.data,
+                address=form.address.data,
+                college_id=form.college_id.data
+            )
+            db.session.add(faculty)
+            db.session.commit()
+            flash('Faculty created successfully!', 'success')
+            return redirect(url_for('admin.faculties'))
+        else:
+            print(f"Faculty form validation errors: {form.errors}")
+    
     return render_template('admin/faculties/create.html', form=form)
 
 @admin.route('/faculties/edit/<int:id>', methods=['GET', 'POST'])
@@ -244,8 +334,14 @@ def edit_faculty(id):
 def delete_faculty(id):
     faculty = Faculty.query.get_or_404(id)
     db.session.delete(faculty)
-    db.session.commit()
-    flash('Faculty deleted successfully!', 'success')
+    
+    try:
+        db.session.commit()
+        flash('Faculty deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting faculty: {str(e)}', 'danger')
+    
     return redirect(url_for('admin.faculties'))
 
 # Student CRUD
@@ -261,17 +357,26 @@ def students():
 @admin_required
 def create_student():
     form = StudentForm()
-    if form.validate_on_submit():
-        student = Student(
-            name=form.name.data,
-            year=form.year.data,
-            contact_number=form.contact_number.data,
-            address=form.address.data
-        )
-        db.session.add(student)
-        db.session.commit()
-        flash('Student created successfully!', 'success')
-        return redirect(url_for('admin.students'))
+    
+    if request.method == 'POST':
+        print("Student form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("Student form validated successfully!")
+            student = Student(
+                name=form.name.data,
+                year=form.year.data,
+                contact_number=form.contact_number.data,
+                address=form.address.data
+            )
+            db.session.add(student)
+            db.session.commit()
+            flash('Student created successfully!', 'success')
+            return redirect(url_for('admin.students'))
+        else:
+            print(f"Student form validation errors: {form.errors}")
+    
     return render_template('admin/students/create.html', form=form)
 
 @admin.route('/students/edit/<int:id>', methods=['GET', 'POST'])
@@ -300,25 +405,37 @@ def delete_student(id):
 @admin_required
 def progress_reports():
     reports = ProgressReport.query.all()
-    return render_template('admin/progress_reports/index.html', reports=reports)
+    # Create an empty form for CSRF protection
+    form = ProgressReportForm()
+    return render_template('admin/progress_reports/index.html', reports=reports, form=form)
 
 @admin.route('/progress-reports/create', methods=['GET', 'POST'])
 @admin_required
 def create_progress_report():
     form = ProgressReportForm()
     form.student_id.choices = [(s.id, s.name) for s in Student.query.all()]
-    if form.validate_on_submit():
-        report = ProgressReport(
-            student_id=form.student_id.data,
-            year=form.year.data,
-            semester=form.semester.data,
-            gpa=form.gpa.data,
-            remarks=form.remarks.data
-        )
-        db.session.add(report)
-        db.session.commit()
-        flash('Progress Report created successfully!', 'success')
-        return redirect(url_for('admin.progress_reports'))
+    
+    if request.method == 'POST':
+        print("Progress report form submitted!")
+        print(f"Form data: {request.form}")
+        
+        if form.validate_on_submit():
+            print("Progress report form validated successfully!")
+            # Create report with the fields that actually exist in the model
+            report = ProgressReport(
+                student_id=form.student_id.data,
+                year=form.year.data,
+                grade=form.gpa.data,  # Using gpa field from form for grade
+                rank=0,  # Providing a default value for rank
+                # Note: semester field is not in the model, so we don't include it
+            )
+            db.session.add(report)
+            db.session.commit()
+            flash('Progress Report created successfully!', 'success')
+            return redirect(url_for('admin.progress_reports'))
+        else:
+            print(f"Progress report form validation errors: {form.errors}")
+    
     return render_template('admin/progress_reports/create.html', form=form)
 
 @admin.route('/progress-reports/edit/<int:id>', methods=['GET', 'POST'])
@@ -327,11 +444,25 @@ def edit_progress_report(id):
     report = ProgressReport.query.get_or_404(id)
     form = ProgressReportForm(obj=report)
     form.student_id.choices = [(s.id, s.name) for s in Student.query.all()]
+    
+    # Map the grade field to gpa in the form
+    if request.method == 'GET':
+        form.gpa.data = report.grade
+    
     if form.validate_on_submit():
-        form.populate_obj(report)
+        report.student_id = form.student_id.data
+        report.year = form.year.data
+        report.grade = form.gpa.data  # Map gpa from form to grade in model
+        report.remarks = form.remarks.data
+        # If your form has a rank field, update it here
+        # report.rank = form.rank.data
         db.session.commit()
         flash('Progress Report updated successfully!', 'success')
         return redirect(url_for('admin.progress_reports'))
+    else:
+        # Print form errors for debugging
+        print(f"Form validation errors: {form.errors}")
+    
     return render_template('admin/progress_reports/edit.html', form=form, report=report)
 
 @admin.route('/progress-reports/delete/<int:id>', methods=['POST'])
@@ -393,7 +524,18 @@ def edit_user(id):
 @admin_required
 def delete_user(id):
     user = User.query.get_or_404(id)
-    db.session.delete(user)
-    db.session.commit()
-    flash('User deleted successfully!', 'success')
+    
+    # Don't allow deleting the current user
+    if current_user.id == user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('admin.users'))
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash('User deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'danger')
+    
     return redirect(url_for('admin.users'))
